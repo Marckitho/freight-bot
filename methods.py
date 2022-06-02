@@ -46,6 +46,8 @@ def getPackages():
     # Pega as quantidades
     applyPackage(p, package(rq.alba, cfg.pack[0], 0)) # Alba
     applyPackage(p, package(rq.cervia, cfg.pack[1], 1)) # Cervia
+    applyPackage(p, package(rq.novara, cfg.pack[2], 2)) # Novara
+    applyPackage(p, package(rq.ravenna, cfg.pack[3], 3)) # Ravenna
 
     return p
 
@@ -59,6 +61,8 @@ def getTotalWeight():
     # Pega os pesos por produto
     t += rq.alba * cfg.weight[0] # Alba
     t += rq.cervia * cfg.weight[1] # Cervia
+    t += rq.novara * cfg.weight[2] # Novara
+    t += rq.ravenna * cfg.weight[3] # Ravenna
 
     return t
 

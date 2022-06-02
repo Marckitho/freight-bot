@@ -7,65 +7,86 @@ def tnt():
     from selenium.webdriver.support.ui import WebDriverWait
     from selenium.webdriver.support.ui import Select
     from selenium.webdriver.support import expected_conditions as EC
-    from selenium.common.exceptions import TimeoutException
+    from selenium.common.exceptions import TimeoutException, ElementNotInteractableException
     from webdriver_manager.chrome import ChromeDriverManager
     from selenium.webdriver.common.alert import Alert
     
-    
     import time
-    # import main
     import config as cfg
     import request as rq
     import methods as mt
+    import credentials as cr
 
     driver = webdriver.Chrome(ChromeDriverManager().install())
     
     # Constantes
-    login = cfg.tntUser
-    passw = cfg.tntPass
+    login = cr.tntUser
+    passw = cr.tntPass
 
-    result = ["Erro", "Erro"]
+    # Resultado
+    result = []
+
+    result.append("Erro")
+    result.append("Erro")
+    result.append("")
 
     # Conectar com Rodonaves (Logar)
     driver.get("https://radar.tntbrasil.com.br/radar/public/login.do")
 
     # Campos de Login
-    loginInput = driver.find_element_by_id('login')
+    loginInput = driver.find_element_by_id('usuario')
     passwInput = driver.find_element_by_id('senha')
 
     loginInput.send_keys(login)
     passwInput.send_keys(passw)
-    driver.execute_script('document.querySelector("a#login").click()')
+    driver.find_element_by_xpath('//button[@label = " ACESSAR"]').click()
 
-    # Check 404
-    # if (driver.find_element_by_xpath("//title[text()='Error 404--Not Found']")):
-    #     return "TNT: Erro 404 - Página fora do ar."
-
-    time.sleep(2)
-
-    # Entrar nas cotações
-    # driver.execute_script("document.querySelectorAll('.img-circle')[0].click()")
-    driver.get("https://radar.tntbrasil.com.br/radar/private/cotacaoOnline.do")
-
-    time.sleep(2)
+    # Checar 404 or Login error
+    # assert driver.current_url == "https://radar.tntbrasil.com.br/radar/private"
+    try:
+        element = WebDriverWait(driver, 10).until(
+            EC.url_to_be("https://radar.tntbrasil.com.br/radar/private")
+        )
+    except TimeoutException:
+        result[2] = "ERRO: LOGIN LONGO"
+    else:
+        assert driver.current_url == "https://radar.tntbrasil.com.br/radar/private"
+        # Entrar nas cotações
+        driver.get("https://radar.tntbrasil.com.br/radar/private/cotacaoOnline.do")
 
     # CNPJ
-    Select(driver.find_element_by_id('cnpjsSelect')).select_by_value('40887025000173')
-    # driver.find_element_by_xpath("//option[@value='40887025000173']").click()
-
-    time.sleep(2)
+    driver.find_element_by_xpath('//p-dropdown[@name = "nrIdentificacao"]').click()
+    driver.find_element_by_xpath('//li[@aria-label = "40887025000173"]').click()
 
     # Dados do Destinatário
-    tipoPessoaDestinatario = Select(driver.find_element_by_id('tipoPessoaDestinatario'))
-    tipoPessoaDestinatario.select_by_value('F')
+    # CPF do Destinatário
+    try:
+        WebDriverWait(driver, 5).until(
+            EC.element_to_be_clickable((By.ID, 'identificadorDestinatario'))
+        )
+    except ElementNotInteractableException:
+        result[2] = "ERRO NA CONTA"
+        return result
+    except TimeoutException:
+        result[2] = "ERRO NA CONTA"
+        return result
+    else:
+        driver.find_element_by_id('identificadorDestinatario').send_keys(cr.cpfDummy)
 
-    time.sleep(1)
+    driver.find_element_by_id('tipoPessoaDestinatarioDigitavel').click()
+    driver.find_element_by_xpath('//li[@aria-label = "Física"]').click()
 
+    # Tipo de pessoa
+    # driver.find_element_by_id('tipoPessoaDestinatarioDigitavel').click()
+
+    # Situação Tributária
+    driver.find_element_by_id('sitTributariaDestinatario').click()
+    driver.find_element_by_xpath('//li[@aria-label = "ME/EPP/Simples Nacional Não Contribuinte"]').click()
+
+    # Nome do Destinatário
     driver.find_element_by_id('nomeDestinatario').send_keys(rq.name)
 
-    Select(driver.find_element_by_id('sitTributariaDestinatario')).select_by_value('ME')
-
-    time.sleep(2)
+    time.sleep(20)
 
     # Dados do Responsável
     driver.find_element_by_id('manterDadosClientes').click()
@@ -142,6 +163,6 @@ def tnt():
 
     driver.execute_script('document.querySelectorAll("a")[47].click()') # Calc
 
-    return result
     time.sleep(130)
+    return result
     driver.quit()
