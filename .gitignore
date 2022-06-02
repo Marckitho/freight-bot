@@ -132,3 +132,4 @@ dmypy.json
 test.py
 credentials.txt
 todo.txt
+credentials.py
